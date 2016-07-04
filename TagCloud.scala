@@ -86,7 +86,11 @@ object TagCloud {
 
     import Spiral._
     var placed = false
-    var points = spiralClockwiseFromZero
+    var points =
+      if (scala.util.Random.nextInt(1) == 0)
+        spiralClockwiseWithStep(wordw min wordh)
+      else spiralCounterClockwiseWithStep(wordw min wordh)
+    points = points.drop(scala.util.Random.nextInt(4))
 
     while (!placed) {
       val point = points.head
