@@ -12,7 +12,7 @@ object Spiral {
   val directions: Stream[Direction] =
     up #:: right #:: down #:: left #:: directions
 
-  def add(l: (Int, Int), r: (Int, Int)): (Int, Int) = (l._1 + r._1, l._2 + r._2)
+  val spiralFromZero = spiralFrom((0, 0))
 
   def spiralFrom(center: (Int, Int)): Stream[(Int, Int)] = {
     def go(curr: (Int, Int),
@@ -20,7 +20,7 @@ object Spiral {
           n: Int, i: Int, b: Boolean): Stream[(Int, Int)] = {
       if (i == 0 && b) go(curr, directions.tail, n + 1, n + 1, false)
       else if (i == 0) go(curr, directions.tail, n, n, true)
-      else curr #:: go(add(curr, directions.head), directions, n, i - 1, b)
+      else curr #:: go(directions.head, directions, n, i - 1, b)
     }
 
     go(center, directions, 1, 1, false)
