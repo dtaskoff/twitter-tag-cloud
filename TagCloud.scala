@@ -1,6 +1,7 @@
 package ttc
 
 import java.awt.{ Color, Font, FontMetrics, Graphics2D }
+import java.awt.geom.Area
 import java.awt.image.BufferedImage
 
 
@@ -12,28 +13,30 @@ object TagCloud {
   def range(wordCount: Map[String, Int]): (Int, Int) =
     (wordCount.minBy(_._2)._2, wordCount.maxBy(_._2)._2)
 
-  def wordToImage(word: String, font: Font, color: Color): BufferedImage = {
-    var (w, h) = getWordDimensions(font, word)
-    var img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB)
-    drawWord(word, font, color, img)
-    img
-  }
+  val font = new Font("Helvetica", Font.BOLD, 72)
 
-  def getWordDimensions(font: Font, word: String): (Int, Int) = {
-      var img = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB)
-      var g2d = img.createGraphics()
-      g2d.setFont(font)
-      val fm = g2d.getFontMetrics()
-      g2d.dispose()
-      (fm.stringWidth(word), fm.getHeight())
-  }
+  def wordToArea(word: String): Area =
+    withBufferedImage()(image =>
+      withGraphics(image)(g2d => {
+        val glyph = font.createGlyphVector(g2d.getFontRenderContext(), word)
+        val lbounds = glyph.getLogicalBounds()
+        val vbounds = glyph.getVisualBounds()
 
-  def drawWord(word: String, font: Font, color: Color, img: BufferedImage) = {
-    var g2d = img.createGraphics()
-    g2d.setFont(font)
-    g2d.setColor(color)
-    g2d.drawString(word, 0, g2d.getFontMetrics().getAscent())
+        new Area(glyph.getOutline(
+          (lbounds.getX() - vbounds.getX()).toFloat,
+          -vbounds.getY().toFloat))
+      })
+    )
+
+  def withBufferedImage[A](width: Int = 1, height: Int = 1)(
+      f: BufferedImage => A): A =
+    f(new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB))
+
+  def withGraphics[A](image: BufferedImage)(f: Graphics2D => A): A = {
+    val g2d = image.createGraphics()
+    val ret = f(g2d)
     g2d.dispose()
+    ret
   }
 
 }
