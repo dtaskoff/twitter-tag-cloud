@@ -29,44 +29,18 @@ class TStreamer {
     CLEANER = (n * 60)/INTERVAL;
 
     SparkConf conf = new SparkConf().setMaster("local[2]").setAppName("twitter-tag-cloud");
-     jsc = new JavaStreamingContext(conf, Durations.seconds(INTERVAL));
-     tweets = TwitterUtils.createStream(jsc).window(Durations.seconds(INTERVAL), Durations.seconds(INTERVAL));
-  }
-
-  public synchronized void addToMap(List<String> tags) {
-    for (String tag : tags) {
-      tag = tag.substring(1);
-      if(hashTags.containsKey(tag)) {
-      hashTags.get(tag).add(round);
-    } else {
-      ArrayList<Integer> count = new ArrayList();
-      count.add(round);
-      hashTags.put(tag, count);
-      }
-		}
-
-    round = (round + 1) % CLEANER;
-  }
-
-  public synchronized void filterMap() {
-    hashTags.values().removeAll(Collections.singleton(round));
-
+    jsc = new JavaStreamingContext(conf, Durations.seconds(INTERVAL));
+    tweets = TwitterUtils.createStream(jsc).window(Durations.seconds(INTERVAL), Durations.seconds(INTERVAL));
   }
 
   public void stream() {
     stream = new Thread(new Runnable() {
-            @Override
-            public void run(){
-                streamTweets();
-            }
-        });
+      @Override
+      public void run(){
+          streamTweets();
+      }
+    });
     stream.start();
-  }
-
-  public void streamTweets() {
-    tweets.map(tweet -> tweet.getText()).flatMap(msg -> Arrays.asList(msg.split(" "))).filter(word -> word.startsWith("#")).foreach(e -> { filterMap(); addToMap(e.collect()); return null;});
-    jsc.start();
-    jsc.awaitTermination();
   }
 
   public void close() {
@@ -86,5 +60,29 @@ class TStreamer {
 
     return countedHashtags;
 
+  }
+
+  private void streamTweets() {
+    tweets.map(tweet -> tweet.getText()).flatMap(msg -> Arrays.asList(msg.split(" "))).filter(word -> word.startsWith("#")).foreach(e -> { filterMap(); addToMap(e.collect()); return null;});
+    jsc.start();
+    jsc.awaitTermination();
+  }
+
+  private synchronized void filterMap() {
+    hashTags.values().removeAll(Collections.singleton(round));
+  }
+
+  private synchronized void addToMap(List<String> tags) {
+    for (String tag : tags) {
+      tag = tag.substring(1);
+      if(hashTags.containsKey(tag)) {
+      hashTags.get(tag).add(round);
+    } else {
+      ArrayList<Integer> count = new ArrayList();
+      count.add(round);
+      hashTags.put(tag, count);
+      }
+    }
+    round = (round + 1) % CLEANER;
   }
 }
