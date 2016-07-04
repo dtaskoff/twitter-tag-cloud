@@ -1,7 +1,7 @@
 package ttc
 
 import java.awt.{ Color, Font, FontMetrics, Graphics2D }
-import java.awt.geom.Area
+import java.awt.geom.{ AffineTransform, Area }
 import java.awt.image.BufferedImage
 
 
@@ -59,6 +59,37 @@ object TagCloud {
     ret
   }
 
-  def addWord = ???
+  def addWord(cloud: Area, word: Area): Area = {
+    val wordw  = word.getBounds2D().getWidth().ceil.toInt
+    val wordh  = word.getBounds2D().getHeight().ceil.toInt
+    val cloudw = cloud.getBounds2D().getWidth().ceil.toInt
+    val cloudh = cloud.getBounds2D().getHeight().ceil.toInt
+    val center = ((cloudw - wordw) / 2, (cloudh - wordh) / 2)
+
+    import Spiral._
+    var points = spiralFrom(center)
+    var placed = false
+
+    while (!placed) {
+      val point = points.head
+      def translate: (Int, Int) => AffineTransform =
+        new AffineTransform(1, 0, 0, 1, _, _)
+      val word2 = word.createTransformedArea(translate(point._1, point._2))
+      val cloud2 = cloud.createTransformedArea(new AffineTransform())
+      cloud2.intersect(word2)
+
+      if (cloud2.isEmpty) {
+        cloud.add(word2)
+        if (point._1 < 0 && point._2 < 0)
+          cloud.transform(translate(-point._1, -point._2))
+        else if (point._1 < 0)
+          cloud.transform(translate(-point._1, 0))
+        else if (point._2 < 0)
+          cloud.transform(translate(0, -point._2))
+        placed = true
+      } else points = points.tail
+    }
+    cloud
+  }
 
 }
