@@ -7,16 +7,26 @@ import java.awt.image.BufferedImage
 
 object TagCloud {
 
-  val font = new Font("Helvetica", Font.BOLD, 72)
+  val font: Int => Font = new Font("Helvetica", Font.BOLD, _)
   val color = Color.BLUE
 
-  def mostCommonWords(wordCount: Map[String, Int])(n: Int): List[String] =
-    wordCount.toList.sortBy(_._2).map(_._1).reverse.take(n)
+  def mostCommonWords(n: Int)(
+      wordCount: Map[String, Int]): List[(String, Int)] =
+    wordCount.toList.sortBy(_._2).reverse.take(n)
 
-  def range(wordCount: Map[String, Int]): (Int, Int) =
+  def wordsWithSizes(wordCount: List[(String, Int)]): List[(String, Int)] = {
+    val c: Double = coeff(wordCount)
+    wordCount map Function.tupled((w, n) => (w, (n * c).toInt max 8))
+  }
+
+  def coeff(wordCount: List[(String, Int)]): Double = {
+     72.0 / range(wordCount)._2.toDouble
+  }
+
+  def range(wordCount: List[(String, Int)]): (Int, Int) =
     (wordCount.minBy(_._2)._2, wordCount.maxBy(_._2)._2)
 
-  def tagCloud(words: List[String]): BufferedImage = {
+  def tagCloud(words: List[(String, Int)]): BufferedImage = {
     val cloud = tagCloudArea(words)
     val (w, h) = (
       cloud.getBounds2D().getWidth().toInt,
@@ -32,13 +42,14 @@ object TagCloud {
     })
   }
 
-  def tagCloudArea(words: List[String]): Area =
-    words.map(wordToArea).reduceLeft(addWord)
+  def tagCloudArea(words: List[(String, Int)]): Area =
+    words.map(Function.tupled(wordToArea)).reduceLeft(addWord)
 
-  def wordToArea(word: String): Area =
+  def wordToArea(word: String, fontSize: Int): Area =
     withBufferedImage()(image =>
       withGraphics(image)(g2d => {
-        val glyph = font.createGlyphVector(g2d.getFontRenderContext(), word)
+        val glyph =
+          font(fontSize).createGlyphVector(g2d.getFontRenderContext(), word)
         val lbounds = glyph.getLogicalBounds()
         val vbounds = glyph.getVisualBounds()
 
