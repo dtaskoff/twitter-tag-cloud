@@ -60,36 +60,47 @@ object TagCloud {
   }
 
   def addWord(cloud: Area, word: Area): Area = {
-    val wordw  = word.getBounds2D().getWidth().ceil.toInt
-    val wordh  = word.getBounds2D().getHeight().ceil.toInt
-    val cloudw = cloud.getBounds2D().getWidth().ceil.toInt
-    val cloudh = cloud.getBounds2D().getHeight().ceil.toInt
+    val (wordw, wordh) = bounds(word)
+    val cloudb = bounds(cloud)
+    val (cloudw, cloudh) = cloudb
     val center = ((cloudw - wordw) / 2, (cloudh - wordh) / 2)
 
+    var translation = center
+    word.transform(translate(center))
+
     import Spiral._
-    var points = spiralFrom(center)
     var placed = false
+    var points = spiralFromZero
 
     while (!placed) {
       val point = points.head
-      def translate: (Int, Int) => AffineTransform =
-        new AffineTransform(1, 0, 0, 1, _, _)
-      val word2 = word.createTransformedArea(translate(point._1, point._2))
+      translation = (translation._1 + point._1, translation._2 + point._2)
+      word.transform(translate(point))
+
       val cloud2 = cloud.createTransformedArea(new AffineTransform())
-      cloud2.intersect(word2)
+      cloud2.intersect(word)
 
       if (cloud2.isEmpty) {
-        cloud.add(word2)
-        if (point._1 < 0 && point._2 < 0)
-          cloud.transform(translate(-point._1, -point._2))
-        else if (point._1 < 0)
-          cloud.transform(translate(-point._1, 0))
-        else if (point._2 < 0)
-          cloud.transform(translate(0, -point._2))
+        cloud.add(word)
+        cloud.transform(translate(reposition(cloud)(translation)))
         placed = true
       } else points = points.tail
     }
     cloud
   }
+
+  def bounds(area: Area): (Int, Int) = {
+    val bs = area.getBounds2D()
+    (bs.getWidth().ceil.toInt, bs.getHeight().ceil.toInt)
+  }
+
+  def translate: ((Int, Int)) => AffineTransform =
+    Function.tupled(new AffineTransform(1, 0, 0, 1, _, _))
+
+  def reposition(area: Area)(t: (Int, Int)): (Int, Int) =
+    if (t._1 < 0 && t._2 < 0) (-t._1, -t._2)
+    else if (t._1 < 0) (-t._1, 0)
+    else if (t._2 < 0) (0, -t._2)
+    else (0, 0)
 
 }
