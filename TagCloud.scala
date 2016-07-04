@@ -86,7 +86,7 @@ object TagCloud {
 
     import Spiral._
     var placed = false
-    var points = spiralFromZero
+    var points = spiralClockwiseFromZero
 
     while (!placed) {
       val point = points.head
