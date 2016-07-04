@@ -30,43 +30,61 @@ class TStreamer {
 
     SparkConf conf = new SparkConf().setMaster("local[2]").setAppName("twitter-tag-cloud");
      jsc = new JavaStreamingContext(conf, Durations.seconds(INTERVAL));
-
-    JavaDStream<Status> tweets = TwitterUtils.createStream(jsc).window(Durations.seconds(INTERVAL), Durations.seconds(INTERVAL));
-
-    tweets.map(tweet -> tweet.getText()).flatMap(msg -> Arrays.asList(msg.split(" "))).filter(word -> word.startsWith("#")).foreach(e -> { addToMap(e.collect()); filterMap(); return null;});
-
+     tweets = TwitterUtils.createStream(jsc).window(Durations.seconds(INTERVAL), Durations.seconds(INTERVAL));
   }
 
-  public void addToMap(List<String> tags) {
+  public synchronized void addToMap(List<String> tags) {
     for (String tag : tags) {
+      tag = tag.substring(1);
       if(hashTags.containsKey(tag)) {
       hashTags.get(tag).add(round);
-      System.out.printf("ADDED %s\n", tag);
     } else {
       ArrayList<Integer> count = new ArrayList();
       count.add(round);
       hashTags.put(tag, count);
-      System.out.printf("INITIAL ADD %s\n", tag);
       }
 		}
+
+    round = (round + 1) % CLEANER;
   }
 
-  public void filterMap() {
+  public synchronized void filterMap() {
     hashTags.values().removeAll(Collections.singleton(round));
-    System.out.println(CLEANER);
-    round = (round + 1) % CLEANER;
-    System.out.printf("CHANGE ROUND TO %s\n", round);
+
   }
 
   public void stream() {
+    stream = new Thread(new Runnable() {
+            @Override
+            public void run(){
+                streamTweets();
+            }
+        });
+    stream.start();
+  }
+
+  public void streamTweets() {
+    tweets.map(tweet -> tweet.getText()).flatMap(msg -> Arrays.asList(msg.split(" "))).filter(word -> word.startsWith("#")).foreach(e -> { filterMap(); addToMap(e.collect()); return null;});
     jsc.start();
     jsc.awaitTermination();
   }
 
   public void close() {
-    // jsc.stop();
-    // jsc.close();
+    jsc.stop();
   }
 
-  // getWordCount() return map[string]int
+  public Map<String,Integer> getWordCount() {
+    HashMap<String, Integer> countedHashtags = new HashMap<String, Integer>();
+    HashMap<String, ArrayList<Integer>> currentHashtags;
+    synchronized(this) {
+      currentHashtags = (HashMap<String, ArrayList<Integer>>)hashTags.clone();
+    }
+
+    for (String key : currentHashtags.keySet()) {
+      countedHashtags.put(key, currentHashtags.get(key).size());
+    }
+
+    return countedHashtags;
+
+  }
 }
