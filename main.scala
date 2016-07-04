@@ -2,11 +2,6 @@ package ttc
 
 
 object TwitterTagCloud {
-  def main(args: Array[String]) = {
-//    val tstreamer: TStreamer
-//    tstreamer.test()
-    TestMain.test()
+  def main(args: Array[String]) =
     println("Twitter tag cloud's main!")
-
-  }
 }
