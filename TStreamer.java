@@ -1,27 +1,23 @@
 package ttc;
 
 import org.apache.spark.*;
-import org.apache.spark.api.java.function.*;
 import org.apache.spark.streaming.*;
 import org.apache.spark.streaming.twitter.*;
 import org.apache.spark.streaming.api.java.*;
-import org.apache.spark.api.java.*;
-import java.util.Arrays;
-import java.util.List;
-import scala.Tuple2;
 import java.util.*;
-import java.io.*;
 import twitter4j.*;
-import java.lang.String;
-
 
 class TStreamer {
-  private static final int INTERVAL = 5;
-  private int minutes=1;
-  private int round = 1;
-  private int CLEANER;
-  private JavaStreamingContext jsc;
-  private HashMap<String, ArrayList<Integer>> hashTags;
+
+  Thread stream;
+  static final int INTERVAL = 5;
+  int CLEANER;
+  int minutes=1;
+  int round = 1;
+
+  JavaStreamingContext jsc;
+  HashMap<String, ArrayList<Integer>> hashTags;
+  JavaDStream<Status> tweets;
 
   TStreamer() {
     hashTags = new HashMap();
