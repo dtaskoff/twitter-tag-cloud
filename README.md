@@ -24,3 +24,5 @@
   ```
   sbt compile && sbt run 2> /dev/null
   ```
+
+Developed by Daniel Taskoff and Julia Nedialkova.
