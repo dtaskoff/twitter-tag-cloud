@@ -7,13 +7,33 @@ import java.awt.image.BufferedImage
 
 object TagCloud {
 
+  val font = new Font("Helvetica", Font.BOLD, 72)
+  val color = Color.BLUE
+
   def mostCommonWords(wordCount: Map[String, Int])(n: Int): List[String] =
     wordCount.toList.sortBy(_._2).map(_._1).reverse.take(n)
 
   def range(wordCount: Map[String, Int]): (Int, Int) =
     (wordCount.minBy(_._2)._2, wordCount.maxBy(_._2)._2)
 
-  val font = new Font("Helvetica", Font.BOLD, 72)
+  def tagCloud(words: List[String]): BufferedImage = {
+    val cloud = tagCloudArea(words)
+    val (w, h) = (
+      cloud.getBounds2D().getWidth().toInt,
+      cloud.getBounds2D().getHeight().toInt)
+
+    withBufferedImage(w, h)(image => {
+      withGraphics(image)(g2d => {
+        g2d.setColor(color)
+        g2d.draw(cloud)
+        g2d.fill(cloud)
+      })
+      image
+    })
+  }
+
+  def tagCloudArea(words: List[String]): Area =
+    words.map(wordToArea).reduceLeft(addWord)
 
   def wordToArea(word: String): Area =
     withBufferedImage()(image =>
@@ -38,5 +58,7 @@ object TagCloud {
     g2d.dispose()
     ret
   }
+
+  def addWord = ???
 
 }
