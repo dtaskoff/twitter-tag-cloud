@@ -8,6 +8,8 @@ import java.awt.image.BufferedImage
 object TagCloud {
 
   val font: Int => Font = new Font("Helvetica", Font.BOLD, _)
+  val FONT_MIN = 14
+  val FONT_MAX = 96
   val color = Color.BLUE
 
   def mostCommonWords(n: Int)(
@@ -15,12 +17,15 @@ object TagCloud {
     wordCount.toList.sortBy(_._2).reverse.take(n)
 
   def wordsWithSizes(wordCount: List[(String, Int)]): List[(String, Int)] = {
-    val c: Double = coeff(wordCount)
-    wordCount map Function.tupled((w, n) => (w, (n * c).toInt max 8))
+    val (x, y) = coeffs(wordCount)
+    wordCount map Function.tupled((w, n) => (w, (x * n + y).toInt))
   }
 
-  def coeff(wordCount: List[(String, Int)]): Double = {
-     72.0 / range(wordCount)._2.toDouble
+  def coeffs(wordCount: List[(String, Int)]): (Double, Double) = {
+    val (rmin, rmax) = range(wordCount)
+    val x = (FONT_MAX - FONT_MIN) / (rmax - rmin max 1).toDouble
+    val y = FONT_MAX - rmax.toDouble * x
+    (x, y)
   }
 
   def range(wordCount: List[(String, Int)]): (Int, Int) =
