@@ -1,10 +1,12 @@
 package ttc;
 import java.io.*;
+import java.util.*;
+
 import java.lang.Thread;
 
 public class TestMain {
   public static void test() {
-    // Create a local StreamingContext with two working thread and batch interval of 1 second
+
     TStreamer streamer = new TStreamer(1);
     streamer.stream();
 
@@ -12,11 +14,12 @@ public class TestMain {
         new java.util.TimerTask() {
             @Override
             public void run() {
-              System.out.println("Potato");
               streamer.close();
+              HashMap<String,Integer> hey = (HashMap<String,Integer>) streamer.getWordCount();
+              System.out.println(hey.size());
             }
         },
-        5
+        10000
    );
 
   }
