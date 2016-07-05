@@ -63,13 +63,24 @@ class TStreamer {
   }
 
   private void streamTweets() {
-    tweets.map(tweet -> tweet.getText()).flatMap(msg -> Arrays.asList(msg.split(" "))).filter(word -> word.startsWith("#")).foreach(e -> { filterMap(); addToMap(e.collect()); return null;});
+    tweets.map(tweet -> tweet.getText()).flatMap(msg -> Arrays.asList(msg.split("[ .,?!\n\t]+")))
+                                        .filter(word -> word.startsWith("#"))
+                                        .foreach(e -> { filterMap(); addToMap(e.collect()); return null;});
     jsc.start();
     jsc.awaitTermination();
   }
 
   private synchronized void filterMap() {
-    hashTags.values().removeAll(Collections.singleton(round));
+    ArrayList<Integer> emptyList = new ArrayList<Integer>();
+    for(ArrayList<Integer> value : hashTags.values()) {
+      value.removeAll(Collections.singleton(round));
+    }
+
+    for (String key: ((Map<String, Integer>)hashTags.clone()).keySet()) {
+      if(hashTags.get(key).equals(emptyList)) {
+        hashTags.remove(key);
+      }
+    }
   }
 
   private synchronized void addToMap(List<String> tags) {
