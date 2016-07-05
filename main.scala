@@ -13,17 +13,26 @@ object TwitterTagCloud {
   def main(args: Array[String]) = {
     val tstreamer = new TStreamer(1)
     tstreamer.stream()
-    Thread sleep 60000
-    var wc = tstreamer.getWordCount().asScala.toMap.mapValues(_.toInt)
-    ImageIO.write(tagCloud(wordsWithSizes(mostCommonWords(3)(wc))),
-      "png", new File("01.png"))
 
-    Thread sleep 60000
-    wc = tstreamer.getWordCount().asScala.toMap.mapValues(_.toInt)
-    ImageIO.write(tagCloud(wordsWithSizes(mostCommonWords(3)(wc))),
-      "png", new File("02.png"))
+    sys.ShutdownHookThread {
+      tstreamer.close()
+    }
 
-    tstreamer.close()
+    var count = 0
+    while (true) {
+      try {
+        Thread sleep 60000
+      } catch {
+        case e: InterruptedException => println("gotcha")
+      }
+
+      var wc = tstreamer.getWordCount().asScala.toMap.mapValues(_.toInt)
+      if (!wc.isEmpty) {
+        ImageIO.write(tagCloud(wordsWithSizes(mostCommonWords(10)(wc))),
+          "png", new File(s"$count.png"))
+        count = count + 1
+      }
+    }
   }
 
 }
